@@ -228,5 +228,111 @@ console.log(new PrototypeExtendClass());
 console.log((new PrototypeExtendClass() as any).print());
 console.log((new PrototypeExtendClass() as any).print2());
 console.log((new PrototypeExtendClass() as any).gender);
-
 ```
+
+## Method Decorator
+
+메서드 데코레이터는 메서드 선언 직전에 선언된다. 메서드의 속성 설명자(`PropertyDescriptor`)에 적용되고 메서드의 정의를 읽거나 수정할 수 있다.
+
+❗️[property descriptor](https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty)
+
+선언 파일, 오버로드 메서드, 선언 클래스에 사용할 수 없다.
+
+- 메서드 데코레이터 매개변수
+  - `정적(static) 멤버가 속한 생성자 함수`이거나 `인스턴스 멤버에 대한 클래스의 프로토타입`
+  - 멤버의 이름
+  - 멤버의 속성 설명자 `PrototypeDescriptor`
+
+만약 메서드 데코레이터가 값을 반환한다면 이는 해당 메서드의 속성 설명자가 된다.
+
+세번째 인자 PropertyDescriptor 가 받을 수 있는 타입
+
+```js
+interface PropertyDescriptor{
+  configurable?: boolean // 속성을 정의할 수 있는지의 여부
+  enumerable?: boolean // 열거형인지 여부
+  value?: any // 속성 값
+  writable?: boolean // 수정 가능 여부
+  get?(): any // getter
+  set?(v:any): void; // setter
+}
+```
+
+```js
+function HandleError() {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
+    console.log(target);
+    console.log(propertyKey);
+    console.log(descriptor);
+
+    const method = descriptor.value;
+
+    descriptor.value = function (...args: any) {
+      try {
+        method.apply(this, args);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+  };
+}
+class Greeter {
+  @HandleError()
+  hello() {
+    throw new Error("테스트 에러");
+  }
+}
+
+new Greeter();
+new Greeter().hello();
+```
+
+장식한 `hello`가 호출될 때 특정 무엇인가를 동작시키고 싶거나, 행동을 제어하고 싶을 경우 재할당한 변수 `method`(`descriptor.value`)를 이용할 수 있다.
+
+이때 `method`를 백업하는 과정에서 `this`를 `apply, call, bind`등으로 바인딩해줘야 한다는 점이다
+
+```js
+function classDeco(param1, param2) {
+  return function <T extends { new (...args: any[]): {} }>(constructor: T) {
+    return class extends constructor {
+      newProperty = param1;
+      hello = param2;
+    };
+  };
+}
+
+function thisUnbinding() {
+  return function (target: any, property: any, descriptor: PropertyDescriptor) {
+    let originalMethod = descriptor.value;
+    descriptor.value = function (...args) {
+      originalMethod(args);
+    };
+  };
+}
+
+function thisBinding() {
+  return function (target: any, property: any, descriptor: PropertyDescriptor) {
+    let originalMethod = descriptor.value;
+    descriptor.value = function (...args) {
+      originalMethod.apply(this, args);
+    };
+  };
+}
+
+@classDeco("param1", "두비루비루라빠")
+class thisBindigTest {
+  property = "property";
+  hello: string;
+  @thisUnbinding()
+  test() {
+    console.log("test", this);
+  }
+}
+new thisBindigTest().test();
+```
+
+`thisUnbinding` 데코레이터의 경우 `this` 는 `undefined`로 나타난다.
