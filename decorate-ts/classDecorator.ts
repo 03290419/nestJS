@@ -50,3 +50,33 @@ class containerTestClass {
   }
 }
 console.log(new containerTestClass("hi"));
+
+function classDecoratorFactoryUsingPrototypeExtend<
+  T extends { new (...args: any[]): {} }
+>(constructorFn: T) {
+  constructorFn.prototype.print2 = function () {
+    console.log("this is print2 ");
+  };
+  constructorFn.prototype.gender = "female";
+
+  return class extends constructorFn {
+    public name = "mark";
+    public _age = 36;
+
+    constructor(...args: any[]) {
+      super(args);
+    }
+
+    public print() {
+      console.log("this is print");
+    }
+  };
+}
+
+@classDecoratorFactoryUsingPrototypeExtend
+class PrototypeExtendClass {}
+
+console.log(new PrototypeExtendClass());
+console.log((new PrototypeExtendClass() as any).print());
+console.log((new PrototypeExtendClass() as any).print2());
+console.log((new PrototypeExtendClass() as any).gender);
