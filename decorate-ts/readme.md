@@ -336,3 +336,38 @@ new thisBindigTest().test();
 ```
 
 `thisUnbinding` 데코레이터의 경우 `this` 는 `undefined`로 나타난다.
+
+## Property Decorators
+
+프로퍼티 데코레이터는 프로퍼티 선언 바로 전에 선언 된다. 프로퍼티 데코레이터는 메서드 데코레이터와 다르게 데코레이터 함수에 `Property Descriptor`가 인자로서 제공되지 않는다는 차이가 있다. 단, 프로퍼티 데코레이터도 마찬가지로 `Property Descriptor`형식의 객체를 반환해서 프로퍼티의 설정을 바꿀 수 있다.
+
+- 프로퍼티 데코레이터 매개변수
+  - `target`: `static`프로퍼티면 클래스의 생성자 함수, 인스턴스 프로퍼티라면 클래스의 `prototype`객체
+  - `decoratorPropertyName`: 해당 `property`의 이름
+- 프로퍼티 데코레이터 리턴 값
+  - `Property Descriptor`
+  - `void`
+
+```js
+function propertyDecorator(writable: boolean = true) {
+  return function (target: any, decoratorPropertyName: any): any {
+    return {
+      value: 10,
+      writable,
+    };
+  };
+}
+
+class propertyDecoratorTest {
+  property = "property";
+  @propertyDecorator(false)
+  public unRewritable = 0;
+  @propertyDecorator()
+  public reWritable = 203;
+}
+
+console.log(new propertyDecoratorTest().unRewritable);
+new propertyDecoratorTest().unRewritable = 2;
+console.log(new propertyDecoratorTest().reWritable);
+new propertyDecoratorTest().reWritable = 222;
+```
